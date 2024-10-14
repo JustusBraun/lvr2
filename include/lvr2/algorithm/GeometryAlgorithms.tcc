@@ -575,13 +575,16 @@ DenseVertexMap<float> calcNormalClearance(
     for (auto vertexH: mesh.vertices())
     {
         DistInt result;
+        Vector3f origin = Util::to_eigen(mesh.getVertexPosition(vertexH));
+        Vector3f normal = Util::to_eigen(normals[vertexH]);
+        // Add a small offset to the vertex position to avoid intersections with its incident faces
         raycaster.castRay(
-            Util::to_eigen(mesh.getVertexPosition(vertexH)),
-            Util::to_eigen(normals[vertexH]),
+            origin + normal * 0.001,
+            normal,
             result
         );
-
-        freespace.insert(vertexH, result.dist);
+        // Add the same offset to the distance result
+        freespace.insert(vertexH, result.dist + 0.001);
         ++progress;
     }
 
