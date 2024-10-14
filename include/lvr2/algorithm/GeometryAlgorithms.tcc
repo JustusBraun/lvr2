@@ -36,6 +36,9 @@
 
 #include "lvr2/attrmaps/AttrMaps.hpp"
 #include "lvr2/io/Progress.hpp"
+#include "lvr2/algorithm/raycasting/EmbreeRaycaster.hpp"
+#include "lvr2/algorithm/FinalizeAlgorithms.hpp"
+#include "lvr2/util/Util.hpp"
 
 namespace lvr2
 {
@@ -547,6 +550,49 @@ DenseVertexMap<float> calcBorderCosts(
 
     return borderCosts;
 }
+
+
+template <typename BaseVecT>
+DenseVertexMap<float> calcNormalClearance(
+    const BaseMesh<BaseVecT>& mesh,
+    const DenseVertexMap<Normal<typename BaseVecT::CoordType>>& normals
+)
+{
+    // Create a MeshBufferPtr to pass to raycaster implementations
+    SimpleFinalizer<BaseVecT> fin;
+    fin.setNormalData(normals);
+    MeshBufferPtr buffer = fin.apply(mesh);
+
+    // TODO: Create a factory using Embree or OpenCL or BVH
+    // Create a raycaster implementation
+    auto raycaster = EmbreeRaycaster<DistInt>(buffer);
+    DenseVertexMap<float> freespace;
+    
+    // Cast rays for each vertex
+    std::stringstream msg;
+    msg << timestamp << "[calcNormalClearance] Calculating free space along vertex normals";
+    ProgressBar progress(mesh.numVertices(), msg.str());
+    for (auto vertexH: mesh.vertices())
+    {
+        DistInt result;
+        raycaster.castRay(
+            Util::to_eigen(mesh.getVertexPosition(vertexH)),
+            Util::to_eigen(normals[vertexH]),
+            result
+        );
+
+        freespace.insert(vertexH, result.dist);
+        ++progress;
+    }
+
+    if (!timestamp.isQuiet())
+    {
+        cout << endl;
+    }
+    
+    return freespace;
+}
+
 
 class CompareDist
 {

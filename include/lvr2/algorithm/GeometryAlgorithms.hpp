@@ -35,6 +35,7 @@
 #include "lvr2/geometry/BaseMesh.hpp"
 #include "lvr2/attrmaps/AttrMaps.hpp"
 #include "lvr2/geometry/Handles.hpp"
+#include "lvr2/geometry/Normal.hpp"
 #include <list>
 
 namespace lvr2
@@ -209,6 +210,19 @@ DenseEdgeMap<float> calcVertexDistances(const BaseMesh<BaseVecT>& mesh);
  */
 template<typename BaseVecT>
 DenseVertexMap<float> calcBorderCosts(const BaseMesh<BaseVecT>& mesh, double border_cost = 1.0);
+
+
+/**
+ * @brief Compute the space available above a given vertex using raycasting
+ *
+ * @param mesh  The mesh to calculate the clearances for. The mesh buffer has to contain vertex normals!
+ * @return      A dense vertex map containing the free space above the vertex, if successfull
+ */
+template <typename BaseVecT>
+DenseVertexMap<float> calcNormalClearance(
+    const BaseMesh<BaseVecT>& mesh,
+    const DenseVertexMap<Normal<typename BaseVecT::CoordType>>& normals
+);
 
 
 /**
