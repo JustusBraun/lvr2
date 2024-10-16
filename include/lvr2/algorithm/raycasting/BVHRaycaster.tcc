@@ -140,16 +140,23 @@ BVHRaycaster<IntT>::intersectTrianglesBVH(
             // if ray intersects inner node, push indices of left and right child nodes on the stack
             if (rayIntersectsBox(origin, ray, &clBVHlimits[bvh_limits_scale * 3 * boxId]))
             {
-                stack[stackId++] = clBVHindicesOrTriLists[4 * boxId + 1];
-                stack[stackId++] = clBVHindicesOrTriLists[4 * boxId + 2];
-
                 // return if stack size is exceeded
-                if ( stackId > m_stack_size)
+                if ( stackId >= m_stack_size)
                 {
                     printf("BVH stack size exceeded!\n");
-                    result.hit = 0;
+                    result.hit = false;
                     return result;
                 }
+                stack[stackId++] = clBVHindicesOrTriLists[4 * boxId + 1];
+
+                // return if stack size is exceeded
+                if ( stackId >= m_stack_size)
+                {
+                    printf("BVH stack size exceeded!\n");
+                    result.hit = false;
+                    return result;
+                }
+                stack[stackId++] = clBVHindicesOrTriLists[4 * boxId + 2];
             }
         }
         else // leaf node
