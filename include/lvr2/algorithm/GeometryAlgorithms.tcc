@@ -40,6 +40,13 @@
 #include "lvr2/algorithm/FinalizeAlgorithms.hpp"
 #include "lvr2/util/Util.hpp"
 
+#ifdef LVR2_USE_EMBREE
+#include "lvr2/algorithm/raycasting/EmbreeRaycaster.hpp"
+#else
+#include "lvr2/algorithm/raycasting/BVHRaycaster.hpp"
+#endif
+
+
 namespace lvr2
 {
 
@@ -563,9 +570,13 @@ DenseVertexMap<float> calcNormalClearance(
     fin.setNormalData(normals);
     MeshBufferPtr buffer = fin.apply(mesh);
 
-    // TODO: Create a factory using Embree or OpenCL or BVH
     // Create a raycaster implementation
+#ifdef LVR2_USE_EMBREE
     auto raycaster = EmbreeRaycaster<DistInt>(buffer);
+#else
+    // TODO: Would it be better to change the BVHRaycaster to not need a stack?
+    auto raycaster = BVHRaycaster<DistInt>(buffer, 1024);
+#endif
     DenseVertexMap<float> freespace;
     
     // Cast rays for each vertex
@@ -578,13 +589,20 @@ DenseVertexMap<float> calcNormalClearance(
         Vector3f origin = Util::to_eigen(mesh.getVertexPosition(vertexH));
         Vector3f normal = Util::to_eigen(normals[vertexH]);
         // Add a small offset to the vertex position to avoid intersections with its incident faces
-        raycaster.castRay(
+        if (raycaster.castRay(
             origin + normal * 0.001,
             normal,
             result
-        );
+        ))
+        {
+            freespace.insert(vertexH, result.dist + 0.001);
+        }
+        else
+        {
+            freespace.insert(vertexH, std::numeric_limits<float>::infinity());
+        }
+
         // Add the same offset to the distance result
-        freespace.insert(vertexH, result.dist + 0.001);
         ++progress;
     }
 
