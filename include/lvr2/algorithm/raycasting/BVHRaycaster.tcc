@@ -17,6 +17,20 @@ BVHRaycaster<IntT>::BVHRaycaster(const MeshBufferPtr mesh, unsigned int stack_si
 }
 
 template<typename IntT>
+BVHRaycaster<IntT>::BVHRaycaster(const MeshBufferPtr mesh)
+:RaycasterBase<IntT>(mesh)
+,m_bvh(mesh)
+,m_faces(mesh->getFaceIndices())
+,m_vertices(mesh->getVertices())
+,m_BVHindicesOrTriLists(m_bvh.getIndexesOrTrilists().data())
+,m_BVHlimits(m_bvh.getLimits().data())
+,m_TriangleIntersectionData(m_bvh.getTrianglesIntersectionData().data())
+,m_TriIdxList(m_bvh.getTriIndexList().data())
+,m_stack_size(m_bvh.getMaxDepth())
+{
+}
+
+template<typename IntT>
 bool BVHRaycaster<IntT>::castRay(
     const Vector3f& origin,
     const Vector3f& direction,

@@ -567,15 +567,13 @@ DenseVertexMap<float> calcNormalClearance(
 {
     // Create a MeshBufferPtr to pass to raycaster implementations
     SimpleFinalizer<BaseVecT> fin;
-    fin.setNormalData(normals);
     MeshBufferPtr buffer = fin.apply(mesh);
 
     // Create a raycaster implementation
 #ifdef LVR2_USE_EMBREE
     auto raycaster = EmbreeRaycaster<DistInt>(buffer);
 #else
-    // TODO: Would it be better to change the BVHRaycaster to not need a stack?
-    auto raycaster = BVHRaycaster<DistInt>(buffer, 1024);
+    auto raycaster = BVHRaycaster<DistInt>(buffer);
 #endif
     DenseVertexMap<float> freespace;
     

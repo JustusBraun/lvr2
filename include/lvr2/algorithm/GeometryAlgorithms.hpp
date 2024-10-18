@@ -213,10 +213,11 @@ DenseVertexMap<float> calcBorderCosts(const BaseMesh<BaseVecT>& mesh, double bor
 
 
 /**
- * @brief Compute the space available above a given vertex using raycasting
+ * @brief Compute the distances to the next intersections along the vertex normals of the mesh
  *
- * @param mesh  The mesh to calculate the clearances for. The mesh buffer has to contain vertex normals!
- * @return      A dense vertex map containing the free space above the vertex, if successfull
+ * @param mesh          The mesh containing the geometry of interest
+ * @param normals       The vertex normals used by the algorithm
+ * @return              A dense vertex map containing the free space along the normal of each vertex
  */
 template <typename BaseVecT>
 DenseVertexMap<float> calcNormalClearance(
