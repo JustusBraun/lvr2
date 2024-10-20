@@ -33,12 +33,13 @@
 #include <limits>
 #include <queue>
 #include <set>
+#include <list>
 
 #include "lvr2/attrmaps/AttrMaps.hpp"
 #include "lvr2/io/Progress.hpp"
-#include "lvr2/algorithm/raycasting/EmbreeRaycaster.hpp"
 #include "lvr2/algorithm/FinalizeAlgorithms.hpp"
 #include "lvr2/util/Util.hpp"
+#include "lvr2/geometry/BaseMesh.hpp"
 
 #ifdef LVR2_USE_EMBREE
 #include "lvr2/algorithm/raycasting/EmbreeRaycaster.hpp"
@@ -575,17 +576,30 @@ DenseVertexMap<float> calcNormalClearance(
 #else
     auto raycaster = BVHRaycaster<DistInt>(buffer);
 #endif
+
+    // Reserve enough memory for all vertices to prevent unnecessary reallocations
     DenseVertexMap<float> freespace;
+    freespace.reserve(mesh.nextVertexIndex());
     
-    // Cast rays for each vertex
     std::stringstream msg;
     msg << timestamp << "[calcNormalClearance] Calculating free space along vertex normals";
     ProgressBar progress(mesh.numVertices(), msg.str());
-    for (auto vertexH: mesh.vertices())
+
+    // Cast rays for each vertex in parallel
+    #pragma omp parallel for
+    for (auto i = 0; i < mesh.nextVertexIndex(); i++)
     {
+        // Create a vertex handle and check if the mesh contains a vertex with index i
+        auto vertexH = VertexHandle(i);
+        if (!mesh.containsVertex(vertexH))
+        {
+            continue;
+        }
+        
+        float distance = std::numeric_limits<float>::infinity();
         DistInt result;
-        Vector3f origin = Util::to_eigen(mesh.getVertexPosition(vertexH));
-        Vector3f normal = Util::to_eigen(normals[vertexH]);
+        const Vector3f origin = Util::to_eigen(mesh.getVertexPosition(vertexH));
+        const Vector3f normal = Util::to_eigen(normals[vertexH]);
         // Add a small offset to the vertex position to avoid intersections with its incident faces
         if (raycaster.castRay(
             origin + normal * 0.001,
@@ -593,15 +607,15 @@ DenseVertexMap<float> calcNormalClearance(
             result
         ))
         {
-            freespace.insert(vertexH, result.dist + 0.001);
+            // Add the same offset to the distance result
+            distance = result.dist + 0.001;
         }
-        else
+        
+        #pragma omp critical
         {
-            freespace.insert(vertexH, std::numeric_limits<float>::infinity());
+            freespace.insert(vertexH, distance);
+            ++progress;
         }
-
-        // Add the same offset to the distance result
-        ++progress;
     }
 
     if (!timestamp.isQuiet())
