@@ -70,6 +70,12 @@ public:
     /**
      *  @brief Takes the point-data and initializes the underlying searchtree.
      *
+     *  The SearchTree searches the buffer for a "points" array of type CoordT.
+     *  It stores a reference to the shared_array to prevent the array from being
+     *  deleted while this object exists.
+     *
+     *  [WARNING] Modifying the underlying point data invalidates this search structure!
+     *
      *  @param buffer  A PointBuffer point that holds the data.
      */
     SearchTreeFlann(PointBufferPtr buffer);

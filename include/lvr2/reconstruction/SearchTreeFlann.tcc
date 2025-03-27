@@ -48,19 +48,10 @@ namespace lvr2
 template<typename BaseVecT>
 SearchTreeFlann<BaseVecT>::SearchTreeFlann(PointBufferPtr buffer)
 {
-    auto n = buffer->numPoints();
-    FloatChannelOptional pts_optional = buffer->getFloatChannel("points");
-    FloatChannel pts_channel = *pts_optional;
-
-    m_data = boost::shared_array<CoordT>(new CoordT[3 * n]);
+    size_t n;
+    size_t w;
+    m_data = buffer->getArray<CoordT>("points", n, w);
     auto flannPoints = flann::Matrix<CoordT>(m_data.get(), n, 3);
-    for(size_t i = 0; i < n; i++)
-    {
-        BaseVecT p = pts_channel[i];
-        flannPoints[i][0] = p.x;
-        flannPoints[i][1] = p.y;
-        flannPoints[i][2] = p.z;
-    }
 
     m_tree = make_unique<flann::Index<flann::L2_Simple<CoordT>>>(
                  flannPoints,
