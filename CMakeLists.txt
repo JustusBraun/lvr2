@@ -711,6 +711,7 @@ endif(BUILD_TOOLS)
 
 if(BUILD_TOOLS_EXPERIMENTAL)
 
+  add_subdirectory(src/tools/lvr2_bvh_benchmark)
   add_subdirectory(src/tools/lvr2_dmc_reconstruction)
   add_subdirectory(src/tools/lvr2_gs_reconstruction)
   add_subdirectory(src/tools/lvr2_asciiconverter)
