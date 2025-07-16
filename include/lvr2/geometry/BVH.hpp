@@ -229,7 +229,7 @@ private:
      *
      * @return Root node of the current tree
      */
-    BVHNodePtr buildTreeRecursive(vector<AABB>& work, uint32_t depth = 0);
+    BVHNodePtr buildTreeRecursive(typename vector<AABB>::iterator work_begin, typename vector<AABB>::iterator work_end, uint32_t depth = 0);
 
     /**
      * @brief Creates the cache friendly representation of the tree. Needs the tree itself!

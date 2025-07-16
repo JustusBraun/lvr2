@@ -187,7 +187,7 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTree(
 
     #pragma omp parallel
     #pragma omp single nowait
-    out = buildTreeRecursive(work);
+    out = buildTreeRecursive(work.begin(), work.end());
     
     std::cout << "end building." << std::endl;
     out->bb = outerBb;
@@ -296,7 +296,7 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTree(
     BVHTree<BaseVecT>::BVHNodePtr out;
     #pragma omp parallel
     #pragma omp single nowait
-    out = buildTreeRecursive(work);
+    out = buildTreeRecursive(work.begin(), work.end());
 
     out->bb = outerBb;
 
@@ -304,17 +304,30 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTree(
 }
 
 template<typename BaseVecT>
-typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(vector<AABB>& work, uint32_t depth)
+typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
+    typename vector<AABB>::iterator work_begin,
+    typename vector<AABB>::iterator work_end,
+    uint32_t depth
+)
 {
+    // Determine the bounding box of this node
+    BoundingBox<BaseVecT> bb;
+    for (auto it = work_begin; it != work_end; it++)
+    {
+        bb.expand(it->bb);
+    }
+
     // terminate recursion, if work size is small enough
-    if (work.size() < 4)
+    if (std::distance(work_begin, work_end) <= 4)
     {
         // Create a leaf node and add all remaining triangles into it
         auto leaf = make_unique<BVHLeaf>();
-        for (auto aabb: work)
+        leaf->bb = bb;
+
+        for (auto aabb = work_begin; aabb != work_end; aabb++)
         {
-            leaf->triangles.reserve(aabb.triangles.size());
-            for (auto triangle: aabb.triangles)
+            leaf->triangles.reserve(aabb->triangles.size());
+            for (auto triangle: aabb->triangles)
             {
                 leaf->triangles.push_back(triangle);
             }
@@ -327,15 +340,9 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(vec
     }
 
     // divide node into smaller nodes
-    BoundingBox<BaseVecT> bb;
-    for (auto aabb: work)
-    {
-        bb.expand(aabb.bb);
-    }
-
     // SAH, surface area heuristic calculation
     float minCost =
-        work.size() * (bb.getXSize() * bb.getYSize() + bb.getYSize() * bb.getZSize() + bb.getZSize() * bb.getXSize());
+        std::distance(work_begin, work_end) * (bb.getXSize() * bb.getYSize() + bb.getYSize() * bb.getZSize() + bb.getZSize() * bb.getXSize());
 
     auto bestSplit = numeric_limits<typename BaseVecT::CoordType>::max();
     int bestAxis = -1;
@@ -378,32 +385,30 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(vec
 
             int countLeft = 0, countRight = 0;
 
-            for (size_t i = 0; i < work.size(); i++)
+            for (auto v = work_begin; v != work_end; v++)
             {
-                auto& v = work[i];
-
                 float value;
                 if (axis == 0)
                 {
-                    value = v.bb.getCentroid().x;
+                    value = v->bb.getCentroid().x;
                 }
                 else if (axis == 1)
                 {
-                    value = v.bb.getCentroid().y;
+                    value = v->bb.getCentroid().y;
                 }
                 else
                 {
-                    value = v.bb.getCentroid().z;
+                    value = v->bb.getCentroid().z;
                 }
 
                 if (value < testSplit)
                 {
-                    lBb.expand(v.bb);
+                    lBb.expand(v->bb);
                     countLeft++;
                 }
                 else
                 {
-                    rBb.expand(v.bb);
+                    rBb.expand(v->bb);
                     countRight++;
                 }
             }
@@ -435,10 +440,11 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(vec
     if (bestAxis == -1)
     {
         auto leaf = make_unique<BVHLeaf>();
-        for (auto aabb: work)
+        leaf->bb = bb;
+        for (auto aabb = work_begin; aabb != work_end; aabb++)
         {
-            leaf->triangles.reserve(aabb.triangles.size());
-            for (auto triangle: aabb.triangles)
+            leaf->triangles.reserve(aabb->triangles.size());
+            for (auto triangle: aabb->triangles)
             {
                 leaf->triangles.push_back(triangle);
             }
@@ -450,63 +456,37 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(vec
         return move(leaf);
     }
 
-    vector<AABB> leftWork;
-    vector<AABB> rightWork;
-    BoundingBox<BaseVecT> lBb;
-    BoundingBox<BaseVecT> rBb;
-
     // Use the found split to split the current node into two new inner nodes
-    for (size_t i = 0; i < work.size(); i++)
+    auto pred = [bestAxis, bestSplit](const auto& a) -> bool
     {
-        auto& v = work[i];
-
-        // Get the best axis centroid value
-        float value;
         if (bestAxis == 0)
         {
-            value = v.bb.getCentroid().x;
+            return a.bb.getCentroid().x < bestSplit;
         }
         else if (bestAxis == 1)
         {
-            value = v.bb.getCentroid().y;
+            return a.bb.getCentroid().y < bestSplit;
         }
         else
         {
-            value = v.bb.getCentroid().z;
+            return a.bb.getCentroid().z < bestSplit;
         }
-
-        // Create queues for left and right sub trees
-        if (value < bestSplit)
-        {
-            leftWork.push_back(v);
-            lBb.expand(v.bb);
-        }
-        else
-        {
-            rightWork.push_back(v);
-            rBb.expand(v.bb);
-        }
-    }
-
-    // Recursively split new sub trees into further inner or leaf nodes
+    };
+    auto partition_point = std::partition(work_begin, work_end, pred);
     
+    // Recursively split new sub trees into further inner or leaf nodes
     auto inner = make_unique<BVHInner>();
+    inner->bb = bb;
 
-    // #pragma omp parallel
-    // #pragma omp single nowait
-    // {
     #pragma omp task shared(inner)
     {
-        inner->left = buildTreeRecursive(leftWork, depth + 1);
-        inner->left->bb = lBb;
+        inner->left = buildTreeRecursive(work_begin, partition_point, depth + 1);
     }
     #pragma omp task shared(inner)
     {
-        inner->right = buildTreeRecursive(rightWork, depth + 1);
-        inner->right->bb = rBb;
+        inner->right = buildTreeRecursive(partition_point, work_end, depth + 1);
     }
     #pragma omp taskwait
-    // }
     
     return move(inner);
 }
