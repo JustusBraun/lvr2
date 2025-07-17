@@ -174,7 +174,7 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTree(
         // Create AABB and add current triangle (face) to it
         AABB aabb;
         aabb.bb = faceBb;
-        aabb.triangles.push_back(m_triangles.size());
+        aabb.triangle = m_triangles.size();
         m_triangles.push_back(triangle);
 
         outerBb.expand(faceBb);
@@ -284,7 +284,7 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTree(
         // Create AABB and add current triangle (face) to it
         AABB aabb;
         aabb.bb = faceBb;
-        aabb.triangles.push_back(m_triangles.size());
+        aabb.triangle = m_triangles.size();
         m_triangles.push_back(triangle);
 
         outerBb.expand(faceBb);
@@ -323,14 +323,11 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
         // Create a leaf node and add all remaining triangles into it
         auto leaf = make_unique<BVHLeaf>();
         leaf->bb = bb;
+        leaf->triangles.reserve(std::distance(work_begin, work_end));
 
         for (auto aabb = work_begin; aabb != work_end; aabb++)
         {
-            leaf->triangles.reserve(aabb->triangles.size());
-            for (auto triangle: aabb->triangles)
-            {
-                leaf->triangles.push_back(triangle);
-            }
+            leaf->triangles.push_back(aabb->triangle);
         }
         #pragma omp critical(bvh_depth_update)
         {
@@ -441,13 +438,11 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
     {
         auto leaf = make_unique<BVHLeaf>();
         leaf->bb = bb;
+        leaf->triangles.reserve(std::distance(work_begin, work_end));
+
         for (auto aabb = work_begin; aabb != work_end; aabb++)
         {
-            leaf->triangles.reserve(aabb->triangles.size());
-            for (auto triangle: aabb->triangles)
-            {
-                leaf->triangles.push_back(triangle);
-            }
+            leaf->triangles.push_back(aabb->triangle);
         }
         #pragma omp critical(bvh_depth_update)
         {

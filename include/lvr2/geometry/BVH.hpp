@@ -154,8 +154,8 @@ private:
     struct AABB {
         BoundingBox<BaseVecT> bb;
 
-        // Triangles corresponding to this AABB
-        vector<size_t> triangles;
+        // Triangle corresponding to this AABB
+        size_t triangle;
     };
 
     // Abstract tree node
