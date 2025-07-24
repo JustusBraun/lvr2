@@ -310,6 +310,8 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
     uint32_t depth
 )
 {
+    // The number of buckets to test during best split computation
+    constexpr const int BUCKETS = 32;
     // Determine the bounding box of this node
     BoundingBox<BaseVecT> bb;
     for (auto it = work_begin; it != work_end; it++)
@@ -341,13 +343,12 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
     float minCost =
         std::distance(work_begin, work_end) * (bb.getXSize() * bb.getYSize() + bb.getYSize() * bb.getZSize() + bb.getZSize() * bb.getXSize());
 
-    auto bestSplit = numeric_limits<typename BaseVecT::CoordType>::max();
+    int bestSplitIdx = -1;
     int bestAxis = -1;
 
     // try all 3 axises X = 0, Y = 1, Z = 2
-    for (uint8_t j = 0; j < 3; j++)
+    for (uint8_t axis = 0; axis < 3; axis++)
     {
-        auto axis = j;
         float start, stop, step;
 
         if (axis == 0)
@@ -372,46 +373,62 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
             continue;
         }
 
-        step = (stop - start) / (1024.0f / (depth + 1.0f));
+        BoundingBox<BaseVecT> buckets[BUCKETS];
+        int counts[BUCKETS] = {};
 
-        for (float testSplit = start + step; testSplit < stop - step; testSplit += step)
+        step = (stop - start) / BUCKETS;
+        const float range = stop - start;
+        // Sort bbs into buckets
+        for (auto v = work_begin; v != work_end; v++)
         {
-            // create left and right bb
+            float value;
+            if (axis == 0)
+            {
+                value = v->bb.getCentroid().x;
+            }
+            else if (axis == 1)
+            {
+                value = v->bb.getCentroid().y;
+            }
+            else
+            {
+                value = v->bb.getCentroid().z;
+            }
+
+            const int index = std::clamp<int>(std::floor((value - start) * (BUCKETS) / range), 0, BUCKETS - 1);
+            buckets[index].expand(v->bb);
+            counts[index]++;
+        }
+
+        // Check all split positions
+        for (int i = 1; i < BUCKETS; i++)
+        {
+            const float testSplit = start + i * step;
             BoundingBox<BaseVecT> lBb;
             BoundingBox<BaseVecT> rBb;
 
             int countLeft = 0, countRight = 0;
-
-            for (auto v = work_begin; v != work_end; v++)
+            for (int j = 0; j < i; j++)
             {
-                float value;
-                if (axis == 0)
+                if (!buckets[j].isValid())
                 {
-                    value = v->bb.getCentroid().x;
+                    continue;
                 }
-                else if (axis == 1)
-                {
-                    value = v->bb.getCentroid().y;
-                }
-                else
-                {
-                    value = v->bb.getCentroid().z;
-                }
-
-                if (value < testSplit)
-                {
-                    lBb.expand(v->bb);
-                    countLeft++;
-                }
-                else
-                {
-                    rBb.expand(v->bb);
-                    countRight++;
-                }
+                lBb.expand(buckets[j]);
+                countLeft += counts[j];
             }
 
-            // Skipt to small values
-            if (countLeft <= 1 || countRight <= 1)
+            for (int j = i; j < BUCKETS; j++)
+            {
+                if (!buckets[j].isValid())
+                {
+                    continue;
+                }
+                rBb.expand(buckets[j]);
+                countRight += counts[j];
+            }
+
+            if (countLeft <= 1 || countRight <= 1 || !lBb.isValid() || !rBb.isValid())
             {
                 continue;
             }
@@ -427,7 +444,7 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
             if (totalCost < minCost)
             {
                 minCost = totalCost;
-                bestSplit = testSplit;
+                bestSplitIdx = i;
                 bestAxis = axis;
             }
         }
@@ -452,20 +469,36 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
     }
 
     // Use the found split to split the current node into two new inner nodes
-    auto pred = [bestAxis, bestSplit](const auto& a) -> bool
+    float range = -1.0;
+    float start = 0.0;
+    
+    switch(bestAxis)
     {
-        if (bestAxis == 0)
+        case 0:
+            range = bb.getMax().x - bb.getMin().x;
+            start = bb.getMin().x;
+            break;
+        case 1:
+            range = bb.getMax().y - bb.getMin().y;
+            start = bb.getMin().y;
+            break;
+        default:
+            range = bb.getMax().z - bb.getMin().z;
+            start = bb.getMin().z;
+            break;
+    }
+
+    auto pred = [bestAxis, bestSplitIdx, range, start](const auto& a) -> bool
+    {
+        float value = 0.0;
+        switch (bestAxis)
         {
-            return a.bb.getCentroid().x < bestSplit;
+            case 0: value = a.bb.getCentroid().x; break;
+            case 1: value = a.bb.getCentroid().y; break;
+            default: value = a.bb.getCentroid().z; break;
         }
-        else if (bestAxis == 1)
-        {
-            return a.bb.getCentroid().y < bestSplit;
-        }
-        else
-        {
-            return a.bb.getCentroid().z < bestSplit;
-        }
+        const int index = std::clamp<int>(std::floor((value - start) * (BUCKETS) / range), 0, BUCKETS - 1);
+        return index < bestSplitIdx;
     };
     auto partition_point = std::partition(work_begin, work_end, pred);
     
@@ -473,14 +506,12 @@ typename BVHTree<BaseVecT>::BVHNodePtr BVHTree<BaseVecT>::buildTreeRecursive(
     auto inner = make_unique<BVHInner>();
     inner->bb = bb;
 
+    // Spawn the left child as a task
     #pragma omp task shared(inner)
-    {
-        inner->left = buildTreeRecursive(work_begin, partition_point, depth + 1);
-    }
-    #pragma omp task shared(inner)
-    {
-        inner->right = buildTreeRecursive(partition_point, work_end, depth + 1);
-    }
+    inner->left = buildTreeRecursive(work_begin, partition_point, depth + 1);
+
+    // Execute the right tree in this thread
+    inner->right = buildTreeRecursive(partition_point, work_end, depth + 1);
     #pragma omp taskwait
     
     return move(inner);
