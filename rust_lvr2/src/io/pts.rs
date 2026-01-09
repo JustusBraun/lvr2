@@ -24,7 +24,7 @@ pub fn load_pts<P: AsRef<Path>>(path: P) -> Result<PointBuffer, IoError> {
     let mut has_intensity = false;
     let mut has_colors = false;
     let mut first_line = true;
-    let mut skip_first_line = false;
+    let mut _skip_first_line = false;
     
     for line in reader.lines() {
         let line = line?;
@@ -41,7 +41,7 @@ pub fn load_pts<P: AsRef<Path>>(path: P) -> Result<PointBuffer, IoError> {
             first_line = false;
             if parts.len() == 1 {
                 if let Ok(_count) = parts[0].parse::<usize>() {
-                    skip_first_line = true;
+                    _skip_first_line = true;
                     continue;
                 }
             }

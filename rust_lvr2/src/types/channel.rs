@@ -3,7 +3,6 @@
 //! Channels are used to store per-point or per-vertex attributes
 //! like colors, normals, or custom data.
 
-use std::any::Any;
 
 /// A typed channel storing attribute data.
 ///

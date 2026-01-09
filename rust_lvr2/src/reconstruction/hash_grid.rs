@@ -41,7 +41,7 @@ impl HashGrid {
         let bb = points.bounding_box();
         
         // Extend bounding box slightly
-        let extent = bb.extent();
+        let _extent = bb.extent();
         let padding = voxel_size;
         let min = Vec3f::new(
             bb.min.x - padding,

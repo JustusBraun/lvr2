@@ -3,7 +3,7 @@
 //! A mesh buffer stores vertices, faces (triangles), and associated
 //! attributes like normals, colors, and texture coordinates.
 
-use crate::geometry::{BaseVector, Vec3f, BoundingBox};
+use crate::geometry::{Vec3f, BoundingBox};
 use super::Channel;
 
 /// A buffer for storing triangle mesh data.

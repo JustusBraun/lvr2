@@ -3,7 +3,7 @@
 //! A point buffer stores 3D point coordinates along with associated
 //! attributes like normals, colors, and intensity values.
 
-use crate::geometry::{BaseVector, Vec3f, BoundingBox};
+use crate::geometry::{Vec3f, BoundingBox};
 use super::Channel;
 use std::collections::HashMap;
 

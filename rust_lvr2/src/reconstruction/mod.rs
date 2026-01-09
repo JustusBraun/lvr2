@@ -14,7 +14,6 @@ pub use search_tree::SearchTree;
 pub use normals::estimate_normals;
 
 use crate::types::{PointBuffer, MeshBuffer};
-use crate::geometry::Vec3f;
 use thiserror::Error;
 
 /// Errors that can occur during reconstruction

@@ -40,7 +40,8 @@ impl Timer {
 
 impl Drop for Timer {
     fn drop(&mut self) {
-        // Optionally log on drop
+        // No-op: Timer does not auto-log on drop.
+        // Use .stop() explicitly to log elapsed time.
     }
 }
 

@@ -4,7 +4,7 @@
 
 use super::vector::BaseVector;
 use std::fmt;
-use std::ops::{Neg, Mul, Div, Add, Sub};
+use std::ops::Neg;
 
 /// A normalized 3D direction vector.
 ///
