@@ -65,3 +65,6 @@ debian/lvr2-*/
 ext/rivlib/
 texture_*.jpg
 texture_*.ppm
+
+# Rust build artifacts
+rust_lvr2/target/
