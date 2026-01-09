@@ -1,0 +1,11 @@
+/home/runner/work/lvr2/lvr2/rust_lvr2/target/debug/deps/cargo_metadata-81bad4e63084e6a3.d: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/dependency.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/diagnostic.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/errors.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/messages.rs
+
+/home/runner/work/lvr2/lvr2/rust_lvr2/target/debug/deps/libcargo_metadata-81bad4e63084e6a3.rlib: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/dependency.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/diagnostic.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/errors.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/messages.rs
+
+/home/runner/work/lvr2/lvr2/rust_lvr2/target/debug/deps/libcargo_metadata-81bad4e63084e6a3.rmeta: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/dependency.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/diagnostic.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/errors.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/messages.rs
+
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/lib.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/dependency.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/diagnostic.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/errors.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_metadata-0.14.2/src/messages.rs:
