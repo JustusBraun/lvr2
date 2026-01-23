@@ -272,12 +272,69 @@ if(MSVC OR APPLE)
 endif(MSVC OR APPLE)
 
 if(LVR2_WITH_CUDA)
-  find_package(CUDA)
+
+  cmake_policy(SET CMP0104 NEW)
+
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES native)
+  endif()
+
+    # default flags are not set when including cuda
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+
+    if(NOT CUDA_NVCC_FLAGS_DEBUG)
+      set(CUDA_NVCC_FLAGS_DEBUG "-g" CACHE STRING "" FORCE)
+    endif()
+
+    if(NOT CUDA_NVCC_FLAGS_MINSIZEREL)
+      set(CUDA_NVCC_FLAGS_MINSIZEREL "-Os -DNDEBUG" CACHE STRING "" FORCE)
+    endif()
+
+    if(NOT CUDA_NVCC_FLAGS_RELEASE)
+      set(CUDA_NVCC_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "" FORCE)
+    endif()
+
+    if(NOT CUDA_NVCC_FLAGS_RELWITHDEBINFO)
+      set(CUDA_NVCC_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG" CACHE STRING "" FORCE)
+    endif()
+
+  endif()
+
+  # set(CUDA_STANDARD 14)
+
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+      find_package(CUDAToolkit QUIET)
+      if(CUDAToolkit_FOUND)
+          enable_language(CUDA)
+          set(CUDA_FOUND True)
+          # for backwards compatibility
+          set(CUDA_VERSION ${CUDAToolkit_VERSION})
+          set(CUDA_INCLUDE_DIRS "") # is in target instead
+          set(CUDA_LIBRARIES CUDA::cudart)
+          set(CUDA_cusolver_LIBRARY CUDA::cusolver)
+          set(CUDA_cublas_LIBRARY CUDA::cublas)
+          set(CUDA_DRIVER_LIBRARY CUDA::cuda_driver)
+          set(CUDA_CUDA_LIBRARY CUDA::cuda_driver)
+          set(CUDA_NVRTC_LIBRARY CUDA::nvrtc)
+      else()
+          find_package(CUDA)
+          if(CUDA_FOUND)
+              enable_language(CUDA)
+              set(CUDA_DRIVER_LIBRARY cuda)
+          else()
+              message(STATUS "Neither CudaToolkit nor CUDA found!")
+          endif(CUDA_FOUND)
+      endif(CUDAToolkit_FOUND)
+  endif(CMAKE_CUDA_COMPILER)
+
   if(CUDA_FOUND)
     message(STATUS "Found CUDA")
     include_directories(${CUDA_INCLUDE_DIRS})
     list(APPEND LVR2_DEFINITIONS -DLVR2_USE_CUDA)
   endif(CUDA_FOUND)
+
 endif(LVR2_WITH_CUDA)
 
 #------------------------------------------------------------------------------
@@ -737,11 +794,11 @@ if(LVR2_BUILD_TOOLS_EXPERIMENTAL)
   add_subdirectory(src/tools/lvr2_3dtiles)
   #add_subdirectory(src/tools/teaser_example)
 
-  if (RiVLib_FOUND)
+  if(RiVLib_FOUND)
       #add_subdirectory(src/tools/lvr2_riegl_project_converter)
   endif()
 
-  if(LVR2_WITH_CUDA AND CUDA_FOUND)
+  if(CUDA_FOUND)
   #    cuda_include_directories(ext/CTPL)
       add_subdirectory(src/tools/lvr2_cuda_normals)
   endif()
