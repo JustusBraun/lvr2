@@ -318,11 +318,6 @@ if(LVR2_WITH_CUDA)
           set(CUDA_DRIVER_LIBRARY CUDA::cuda_driver)
           set(CUDA_CUDA_LIBRARY CUDA::cuda_driver)
           set(CUDA_NVRTC_LIBRARY CUDA::nvrtc)
-
-          if(NOT TARGET CUDA::nvrtc)
-            message(FATAL_ERROR "Could not find CUDA nvRTC library!")
-          endif(NOT TARGET CUDA::nvrtc)
-
       else()
           find_package(CUDA)
           if(CUDA_FOUND)
