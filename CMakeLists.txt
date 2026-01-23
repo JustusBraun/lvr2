@@ -314,7 +314,7 @@ endif(LVR2_WITH_OPENCL)
 
 # TODO: I cannot move this section down to the 'add_subdirectory' part.
 # There must be some side effects on the way there 
-if(BUILD_VIEWER)
+if(LVR2_BUILD_VIEWER)
   #------------------------------------------------------------------------------
   # Searching for VTK
   #------------------------------------------------------------------------------
@@ -363,7 +363,7 @@ if(BUILD_VIEWER)
       message(STATUS "Found VTK compoment QVTK")
     endif()
   endif()
-endif(BUILD_VIEWER)
+endif(LVR2_BUILD_VIEWER)
 
 #------------------------------------------------------------------------------
 ## Searching for PCL
@@ -707,13 +707,13 @@ if(NOT MSVC)
 # add_subdirectory(src/tools/lvr2_largescale_reconstruct)
 endif(NOT MSVC)
 
-if(BUILD_TOOLS)
+if(LVR2_BUILD_TOOLS)
   add_subdirectory(src/tools/lvr2_reconstruct)
   add_subdirectory(src/tools/lvr2_mesh_reducer)
   add_subdirectory(src/tools/lvr2_hdf5_mesh_tool)
-endif(BUILD_TOOLS)
+endif(LVR2_BUILD_TOOLS)
 
-if(BUILD_TOOLS_EXPERIMENTAL)
+if(LVR2_BUILD_TOOLS_EXPERIMENTAL)
 
   add_subdirectory(src/tools/lvr2_dmc_reconstruction)
   add_subdirectory(src/tools/lvr2_gs_reconstruction)
@@ -751,19 +751,19 @@ if(BUILD_TOOLS_EXPERIMENTAL)
       add_subdirectory(src/tools/lvr2_cl_sor)
   endif()
 
-endif(BUILD_TOOLS_EXPERIMENTAL)
+endif(LVR2_BUILD_TOOLS_EXPERIMENTAL)
 
 ###############################################################################
 # LVR2 EXAMPLES
 ###############################################################################
-if(BUILD_EXAMPLES)
+if(LVR2_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
 ###############################################################################
 # LVR2 VIEWER + LVR2 ASCII VIEWER
 ###############################################################################
-if(BUILD_VIEWER)
+if(LVR2_BUILD_VIEWER)
 
   if(DEFINED VTK_USE_FILE)
     include(${VTK_USE_FILE})
@@ -790,7 +790,7 @@ if(BUILD_VIEWER)
   if(CURSES_FOUND AND embree_FOUND)
     add_subdirectory(src/tools/lvr2_ascii_viewer)
   endif()
-endif(BUILD_VIEWER)
+endif(LVR2_BUILD_VIEWER)
 
 ###############################################################################
 # CMAKE FILES
