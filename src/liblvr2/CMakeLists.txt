@@ -354,22 +354,21 @@ if(CUDA_FOUND)
     if(NOT CUDA_NVRTC_LIBRARY)
         message(FATAL_ERROR "Required library 'nvrtc' not found.")
     endif(NOT CUDA_NVRTC_LIBRARY)
-
     
-    message(STATUS "Building static LVR CUDA library")
-    cuda_add_library(lvr2cuda_static STATIC ${LVR2_CUDA_SRC})
+    # message(STATUS "Building static LVR CUDA library")
+    # add_library(lvr2cuda_static STATIC ${LVR2_CUDA_SRC})
 
-    # Add dependency to avoid that both targets
-    # are build concurrently in parallel builds
-    add_dependencies(lvr2cuda_static 
-        lvr2_static)
+    # # Add dependency to avoid that both targets
+    # # are build concurrently in parallel builds
+    # add_dependencies(lvr2cuda_static 
+    #     lvr2_static)
 
-    target_link_libraries(lvr2cuda_static
-        lvr2_static
-        ${CUDA_LIBRARIES}
-        ${CUDA_CUDA_LIBRARY}
-        ${CUDA_NVRTC_LIBRARY}
-    )
+    # target_link_libraries(lvr2cuda_static
+    #     lvr2_static
+    #     ${CUDA_LIBRARIES}
+    #     ${CUDA_DRIVER_LIBRARY}
+    #     ${CUDA_NVRTC_LIBRARY}
+    # )
 
     # set_target_properties(lvr2cuda_static
     # PROPERTIES
@@ -378,26 +377,35 @@ if(CUDA_FOUND)
     # )
 
     message(STATUS "Building shared LVR CUDA library")
-    cuda_add_library(lvr2cuda SHARED ${LVR2_CUDA_CPP_SRC} ${LVR2_CUDA_SRC})
+
+    add_library(lvr2cuda SHARED ${LVR2_CUDA_CPP_SRC} ${LVR2_CUDA_SRC})
+
+    target_include_directories(lvr2cuda
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/lvr2>
+            ${CUDA_INCLUDE_DIRS}
+        )
+
+    target_link_libraries(lvr2cuda PUBLIC
+        lvr2
+        ${CUDA_LIBRARIES}
+        ${CUDA_DRIVER_LIBRARY}
+        ${CUDA_NVRTC_LIBRARY}
+    )
 
     add_dependencies(lvr2cuda 
         lvr2)
 
-    target_link_libraries(lvr2cuda
-        lvr2
-        ${CUDA_LIBRARIES}
-        ${CUDA_CUDA_LIBRARY}
-        ${CUDA_NVRTC_LIBRARY}
-    )
-
     set_target_properties(lvr2cuda
-    PROPERTIES
-        SOVERSION ${lvr2_VERSION_MAJOR}
-        VERSION ${lvr2_VERSION}
+        PROPERTIES
+            SOVERSION ${lvr2_VERSION_MAJOR}
+            VERSION ${lvr2_VERSION}
+            CUDA_SEPARABLE_COMPILATION ON
     )
 
     install(
-        TARGETS lvr2cuda_static lvr2cuda
+        TARGETS lvr2cuda
         EXPORT lvr2-targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
