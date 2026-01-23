@@ -329,17 +329,10 @@ sudo make install
 After installation, you can include the lvr2 project in your own CMake project as follows:
 
 ```cmake
-find_package(LVR2 REQUIRED)
-add_definitions(${LVR2_DEFINITIONS})
-include_directories(${LVR2_INCLUDE_DIRS})
-
+find_package(lvr2 REQUIRED)
 add_executable(my_own_exec my_own_code.cpp)
-
-target_link_libraries(my_own_exec
-  ${LVR2_LIBRARIES}
-)
+target_link_libraries(my_app lvr2::lvr2)
 ```
-
 
 # Citation
 

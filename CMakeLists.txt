@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-project(lvr2 VERSION 25.2.0)
+project(lvr2 VERSION 25.2.1)
 
 # OPTIONS
-option(BUILD_EXAMPLES "Build the examples" OFF)
-option(BUILD_VIEWER "Build lvr2_viewer" OFF)
-option(BUILD_TOOLS "Build tools including lvr2_reconstruct" ON)
-option(BUILD_TOOLS_EXPERIMENTAL "Build experimental tools" OFF)
-option(WITH_KINFU "Compile LVR Kinfu" OFF)
-option(WITH_3DTILES "Compile with 3DTiles support" OFF)
-
+option(LVR2_BUILD_EXAMPLES "Build the examples" OFF)
+option(LVR2_BUILD_VIEWER "Build lvr2_viewer" OFF)
+option(LVR2_BUILD_TOOLS "Build tools including lvr2_reconstruct" ON)
+option(LVR2_BUILD_TOOLS_EXPERIMENTAL "Build experimental tools" OFF)
+option(LVR2_WITH_KINFU "Compile LVR Kinfu" OFF)
+option(LVR2_WITH_3DTILES "Compile with 3DTiles support" OFF)
+option(LVR2_WITH_CUDA "Compile with CUDA support, if available" ON)
+option(LVR2_WITH_OPENCL "Compile with OpenCL support, if available" ON)
+option(LVR2_WITH_PCL "Compile with PCL support" OFF)
+option(LVR2_WITH_FREENECT "Compile with libfreenect grabber" OFF)
+option(LVR2_WITH_CV_NONFREE "Use OpenCV non-free descriptors" OFF)
 
 ## Compile as C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -114,8 +118,6 @@ else(MSVC)
   set(CMAKE_CXX_STANDARD 17)
 endif(MSVC)
 
-
-
 find_package(MPI)
 if(MPI_FOUND)
     message(STATUS "Found MPI")
@@ -161,12 +163,10 @@ else()
 endif()
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-option(WITH_CV_NONFREE "Use OpenCV non-free descriptors" OFF)
-if(WITH_CV_NONFREE)
+if(LVR2_WITH_CV_NONFREE)
   message(STATUS "Using OpenCV non-free module")
   list(APPEND LVR2_DEFINITIONS -DLVR2_USE_CV_NONFREE)
-endif(WITH_CV_NONFREE)
-
+endif(LVR2_WITH_CV_NONFREE)
 #------------------------------------------------------------------------------
 # Searching for FLANN
 #------------------------------------------------------------------------------
@@ -267,20 +267,18 @@ endif(GLUT_FOUND)
 #------------------------------------------------------------------------------
 # Searching for CUDA
 #------------------------------------------------------------------------------
-if(MSVC)
-    option(WITH_CUDA "Compile with CUDA support" FALSE)
-else()
-    option(WITH_CUDA "Compile with CUDA support" TRUE)
-endif()
-if(NOT APPLE AND WITH_CUDA)
+if(MSVC OR APPLE)
+    set(LVR2_WITH_CUDA OFF CACHE BOOL "" FORCE)
+endif(MSVC OR APPLE)
+
+if(LVR2_WITH_CUDA)
   find_package(CUDA)
   if(CUDA_FOUND)
     message(STATUS "Found CUDA")
     include_directories(${CUDA_INCLUDE_DIRS})
     list(APPEND LVR2_DEFINITIONS -DLVR2_USE_CUDA)
   endif(CUDA_FOUND)
-endif(NOT APPLE AND WITH_CUDA)
-
+endif(LVR2_WITH_CUDA)
 
 #------------------------------------------------------------------------------
 # Searching for RDB
@@ -302,15 +300,17 @@ endif(RDB_FOUND)
 #------------------------------------------------------------------------------
 # Searching for OpenCl
 #------------------------------------------------------------------------------
-find_package(OpenCL2)
-if(OPENCL_FOUND)
-  message(STATUS "Found OpenCL")
-    include_directories(OPENCL_INCLUDE_DIR)
-    list(APPEND LVR2_DEFINITIONS -DLVR2_USE_OPENCL)
-    if(OpenCL_NEW_API)
-      list(APPEND LVR2_DEFINITIONS -DLVR2_USE_OPENCL_NEW_API)
-    endif(OpenCL_NEW_API)
-endif(OPENCL_FOUND)
+if(LVR2_WITH_OPENCL)
+  find_package(OpenCL2)
+  if(OPENCL_FOUND)
+    message(STATUS "Found OpenCL")
+      include_directories(${OPENCL_INCLUDE_DIR})
+      list(APPEND LVR2_DEFINITIONS -DLVR2_USE_OPENCL)
+      if(OpenCL_NEW_API)
+        list(APPEND LVR2_DEFINITIONS -DLVR2_USE_OPENCL_NEW_API)
+      endif(OpenCL_NEW_API)
+  endif(OPENCL_FOUND)
+endif(LVR2_WITH_OPENCL)
 
 # TODO: I cannot move this section down to the 'add_subdirectory' part.
 # There must be some side effects on the way there 
@@ -368,8 +368,7 @@ endif(BUILD_VIEWER)
 #------------------------------------------------------------------------------
 ## Searching for PCL
 #------------------------------------------------------------------------------
-option(WITH_PCL "Compile with PCL support" OFF)
-if(WITH_PCL)
+if(LVR2_WITH_PCL)
     find_package(PCL)
     if(PCL_FOUND)
         # PCL only results in linker error due to internal mpi dependency
@@ -388,7 +387,7 @@ if(WITH_PCL)
         message(STATUS "-- No PCL found." )
         message(STATUS "-- PCL related stuff will be disabled." )
     endif(PCL_FOUND)
-endif(WITH_PCL)
+endif(LVR2_WITH_PCL)
 
 #------------------------------------------------------------------------------
 # Searching for OpenMP
@@ -411,17 +410,14 @@ endif(OPENMP_FOUND)
 #------------------------------------------------------------------------------
 ## Searching for libfreenect
 #------------------------------------------------------------------------------
-option(WITH_FREENECT "Compile with libfreenect grabber" OFF)
-
 find_package(PkgConfig REQUIRED)
-if(WITH_FREENECT )
+if(LVR2_WITH_FREENECT)
   pkg_check_modules(LIBFREENECT libfreenect)
   if(LIBFREENECT_FOUND)
     message(STATUS "Found Freenect")
     include_directories(${LIBFREENECT_INCLUDE_DIRS})
   endif()
-endif()
-
+endif(LVR2_WITH_FREENECT)
 
 ###############################################################################
 # USED THIRD PARTY STUFF
@@ -480,11 +476,11 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/${RiVLib_DIR})
         include_directories(${RiVLib_INCLUDE_DIRS})
         list(APPEND LVR2_DEFINITIONS -DLVR2_USE_RIVLIB)
         message(STATUS "Found RiVLib")
-    endif()
+    endif(RiVLib_FOUND)
 endif()
 
 # Cesium-native
-if(WITH_3DTILES)
+if(LVR2_WITH_3DTILES)
   include(ExternalProject)
   ExternalProject_Add(cesium-native
     PREFIX cesium-native
@@ -517,7 +513,7 @@ if(WITH_3DTILES)
 
   set(3DTILES_LIBRARIES Cesium3DTiles Cesium3DTilesWriter CesiumGltf CesiumGltfWriter CesiumJsonWriter)
 
-else(WITH_3DTILES)
+else(LVR2_WITH_3DTILES)
   #------------------------------------------------------------------------------
   # Searching for Draco
   #------------------------------------------------------------------------------
@@ -527,7 +523,7 @@ else(WITH_3DTILES)
     include_directories(${draco_INCLUDE_DIRS})
     list(APPEND LVR2_DEFINITIONS -DLVR2_USE_DRACO)
   endif(draco_FOUND)
-endif(WITH_3DTILES)
+endif(LVR2_WITH_3DTILES)
 
 ###############################################################################
 # ADD LVR DEFINITIONS
@@ -544,19 +540,18 @@ add_definitions(${LVR2_DEFINITIONS})
 # # Check and set CUDA host compiler flags.          
 # ###############################################################################
 if(CUDA_FOUND)
-
-include(max_cuda_gcc_version)
-max_cuda_gcc_version(CUDA_VERSION MAX_CUDA_GCC_VERSION)
-message(STATUS "Highest supported GCC version for CUDA: ${MAX_CUDA_GCC_VERSION}")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER ${MAX_CUDA_GCC_VERSION} )
-    message(STATUS "******************************************************************")
-    message(STATUS "* Your gcc version needs to be lower than or equal ${MAX_CUDA_GCC_VERSION} to compile  *")
-    message(STATUS "* the CUDA library and apps. Setting CUDA_HOST_COMPILER to       *")
-    message(STATUS "* g++-${MAX_CUDA_GCC_VERSION}. Please ensure that g++-${MAX_CUDA_GCC_VERSION} is installed on your system.   *")
-    message(STATUS "******************************************************************")
-    set(CUDA_HOST_COMPILER "g++-${MAX_CUDA_GCC_VERSION}" CACHE STRING "" FORCE)
-  endif()
-endif()
+  include(max_cuda_gcc_version)
+  max_cuda_gcc_version(CUDA_VERSION MAX_CUDA_GCC_VERSION)
+  message(STATUS "Highest supported GCC version for CUDA: ${MAX_CUDA_GCC_VERSION}")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER ${MAX_CUDA_GCC_VERSION})
+      message(STATUS "******************************************************************")
+      message(STATUS "* Your gcc version needs to be lower than or equal ${MAX_CUDA_GCC_VERSION} to compile  *")
+      message(STATUS "* the CUDA library and apps. Setting CUDA_HOST_COMPILER to       *")
+      message(STATUS "* g++-${MAX_CUDA_GCC_VERSION}. Please ensure that g++-${MAX_CUDA_GCC_VERSION} is installed on your system.   *")
+      message(STATUS "******************************************************************")
+      set(CUDA_HOST_COMPILER "g++-${MAX_CUDA_GCC_VERSION}" CACHE STRING "" FORCE)
+    endif()
+endif(CUDA_FOUND)
 
 
 ###############################################################################
@@ -570,9 +565,9 @@ if(APPLE AND (NOT OPENMP_FOUND))
         message(STATUS "* configure with 'cmake -DWITH_CLANG_OMP ..'                     *")
         message(STATUS "******************************************************************")
 
-  option(WITH_CLANG_OMP "Compile with clang-omp")
+  option(LVR2_WITH_CLANG_OMP "Compile with clang-omp")
 
-  if(WITH_CLANG_OMP)
+  if(LVR2_WITH_CLANG_OMP)
     set(CMAKE_C_COMPILER /usr/local/bin/clang-omp CACHE STRING "C compiler" FORCE)
       set(CMAKE_CXX_COMPILER /usr/local/bin/clang-omp++ CACHE STRING "C++ compiler" FORCE)
       list(APPEND LVR2_DEFINITIONS -DLVR2_USE_OPEN_MP)
@@ -588,8 +583,6 @@ endif()
 
 install(DIRECTORY include/lvr2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 list(APPEND LVR2_INSTALL_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-
-
 
 ###############################################################################
 # VTK use file include. Has to be called after all CUDA code
@@ -657,47 +650,48 @@ endif()
 #####################################################################################
 
 if(UNIX)
-list(APPEND LVR2_LIB_DEPENDENCIES ${LVR2_LIB_DEPENDENCIES} pthread)
+  list(APPEND LVR2_LIB_DEPENDENCIES ${LVR2_LIB_DEPENDENCIES} pthread)
 endif(UNIX)
 
 if(PCL_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${PCL_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  list(APPEND LVR2_LIB_DEPENDENCIES ${PCL_LIBRARIES} ${MPI_CXX_LIBRARIES})
 endif(PCL_FOUND)
 
-if(WITH_FREENECT AND LIBFREENECT_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${LIBFREENECT_LIBRARIES})
-endif()
+if(LIBFREENECT_FOUND)
+  list(APPEND LVR2_LIB_DEPENDENCIES ${LIBFREENECT_LIBRARIES})
+endif(LIBFREENECT_FOUND)
 
 if(draco_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${draco_LIBRARIES})
+  list(APPEND LVR2_LIB_DEPENDENCIES ${draco_LIBRARIES})
 endif(draco_FOUND)
 
 if(RiVLib_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${RiVLib_SCANIFC_LIBRARY})
-endif()
+  list(APPEND LVR2_LIB_DEPENDENCIES ${RiVLib_SCANIFC_LIBRARY})
+endif(RiVLib_FOUND)
 
 if(OPENCL_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${OpenCL_LIBRARIES})
-endif()
+  list(APPEND LVR2_LIB_DEPENDENCIES ${OpenCL_LIBRARIES})
+endif(OPENCL_FOUND)
 
 if(MPI_FOUND)
   set(LVR2_LIB_DEPENDENCIES ${LVR2_LIB_DEPENDENCIES} ${MPI_LIBRARIES})
-endif()
+endif(MPI_FOUND)
 
 if(MSVC)
-    list(APPEND LVR2_LIB_DEPENDENCIES yaml-cpp)
-endif()
+  list(APPEND LVR2_LIB_DEPENDENCIES yaml-cpp)
+endif(MSVC)
+
 if(YAML_CPP_LIBRARIES)
-list(APPEND LVR2_LIB_DEPENDENCIES ${YAML_CPP_LIBRARIES})
-endif()
+  list(APPEND LVR2_LIB_DEPENDENCIES ${YAML_CPP_LIBRARIES})
+endif(YAML_CPP_LIBRARIES)
 
 if(embree_FOUND)
-list(APPEND LVR2_LIB_DEPENDENCIES ${EMBREE_LIBRARY})
-endif()
+  list(APPEND LVR2_LIB_DEPENDENCIES ${EMBREE_LIBRARY})
+endif(embree_FOUND)
 
-if(WITH_3DTILES)
-    list(APPEND LVR2_LIB_DEPENDENCIES ${3DTILES_LIBRARIES})
-endif(WITH_3DTILES)
+if(3DTILES_FOUND)
+  list(APPEND LVR2_LIB_DEPENDENCIES ${3DTILES_LIBRARIES})
+endif(3DTILES_FOUND)
 
 ###############################################################################
 # LIBRARIES
@@ -747,7 +741,7 @@ if(BUILD_TOOLS_EXPERIMENTAL)
       #add_subdirectory(src/tools/lvr2_riegl_project_converter)
   endif()
 
-  if(CUDA_FOUND)
+  if(LVR2_WITH_CUDA AND CUDA_FOUND)
   #    cuda_include_directories(ext/CTPL)
       add_subdirectory(src/tools/lvr2_cuda_normals)
   endif()
