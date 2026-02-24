@@ -25,7 +25,7 @@ jobs:
 
       # Set up a matrix to run the following 3 linux versions:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04]
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm]
         build_type: [Release]
         c_compiler: [gcc]
         include:
@@ -38,6 +38,14 @@ jobs:
             cpp_compiler: g++
 
           - os: ubuntu-22.04
+            c_compiler: gcc
+            cpp_compiler: g++
+
+          - os: ubuntu-24.04-arm
+            c_compiler: gcc
+            cpp_compiler: g++
+
+          - os: ubuntu-22.04-arm
             c_compiler: gcc
             cpp_compiler: g++
 
