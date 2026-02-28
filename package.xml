@@ -48,7 +48,9 @@ point clouds.
   <depend>libxmu-dev</depend>
   <depend>glut</depend>
   <depend>ocl-icd-opencl-dev</depend>
-  <depend>embree</depend>
+
+  <!-- Embree has not been packaged for ARM64 on Ubuntu 22, therefore we build it from source on humble -->
+  <depend condition="($ROS_DISTRO != humble) and ($ROS_DISTRO != iron)">embree</depend>
 
   <export>
     <build_type>cmake</build_type>
